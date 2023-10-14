@@ -1,0 +1,105 @@
+---
+title: "Homework 2 solutions"
+author: "Jeff Goldsmith"
+date: '`r format(Sys.time(), "%Y-%m-%d")`'
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, 
+                      message = FALSE, 
+                      fig.height =10 ,
+                      fig.width = 20)
+```
+
+
+```{r load_libraries}
+library(tidyverse)
+library(ggridges)
+```
+
+
+## Problem 2
+```{r Loading dataset}
+library(p8105.datasets)
+data("brfss_smart2010")
+brffss_df = 
+  brfss_smart2010 |> 
+  as_tibble()
+```
+
+
+```{r Data Cleaning}
+clean_brffss_df = brffss_df |>  
+  janitor::clean_names() |>
+  mutate(response = str_to_lower(response)) |> 
+  filter(topic == "Overall Health" & grepl('poor|excellent|good',response)) |> 
+  mutate(response = factor(response, order=TRUE, levels = c('poor','good', 'very good','excellent'))) 
+```
+
+## Question Answers
+```{r 2002 States Observed above 7 or more locations}
+states_2002 = filter(clean_brffss_df, year==2002) |> 
+  group_by(locationabbr) |> as_tibble() |> 
+  distinct(locationdesc, .keep_all = TRUE) |> 
+  group_by(locationabbr) |> 
+  count() |>  
+  filter(n >=7)
+states_2002
+```
+
+```{r 2010  States Observed above 7 or more locations}
+states_2010 = filter(clean_brffss_df, year==2010) |> 
+  group_by(locationabbr) |> as_tibble() |> 
+  distinct(locationdesc, .keep_all = TRUE) |> 
+  group_by(locationabbr) |> 
+  count() |>  
+  filter(n>=7)
+states_2010
+```
+
+In 2002, states were observed at 7 or more locations are the following: `r states_2002$locationabbr`. In 2010, states were observed at 7 or more locations are the following: `r states_2010$locationabbr`
+
+
+```{r average data values within states}
+avg_df = clean_brffss_df |>  
+  filter(response=="excellent") |> 
+  group_by(locationabbr, year) |> 
+  summarise_at(vars(data_value), mean, na.rm = TRUE) |> 
+  rename(avg_data_value = data_value)
+
+plot_df = clean_brffss_df |> 
+  filter(response=="excellent") |> 
+  inner_join(avg_df, by=c("locationabbr", "year")) |> 
+  select(year, locationabbr, response, avg_data_value) |> 
+  distinct()
+
+```
+
+
+```{r spaghetti plot}
+ggplot(plot_df, aes(x=year, y=avg_data_value)) + 
+  geom_line(aes(group=locationabbr, color=locationabbr)) + 
+  labs(title = "Line Plot of Average Data Value Over Time Within a State") +
+  theme(text = element_text(size = 30))
+
+```
+
+```{r Distribution of data_value}
+plot_df = clean_brffss_df |>
+  filter( (year ==2006 | year==2010) & locationabbr=="NY")
+
+ggplot(plot_df, aes(x = data_value, fill=response)) + 
+  geom_histogram() + 
+  facet_grid(. ~year) +
+  labs(title = "Distribution of data_value for Years 2006 and 2010") +
+  theme(text = element_text(size = 30)) 
+  
+```
+
+
+
+
+
+
+
