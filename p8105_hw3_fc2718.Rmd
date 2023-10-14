@@ -65,8 +65,7 @@ In 2002, states were observed at 7 or more locations are the following: `r state
 avg_df = clean_brffss_df |>  
   filter(response=="excellent") |> 
   group_by(locationabbr, year) |> 
-  summarise_at(vars(data_value), mean, na.rm = TRUE) |> 
-  rename(avg_data_value = data_value)
+  summarise(avg_data_value = mean(data_value, na.rm = TRUE))
 
 plot_df = clean_brffss_df |> 
   filter(response=="excellent") |> 
