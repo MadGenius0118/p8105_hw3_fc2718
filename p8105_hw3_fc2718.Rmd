@@ -1,6 +1,6 @@
 ---
-title: "Homework 2 solutions"
-author: "Jeff Goldsmith"
+title: "Homework 3"
+author: "Fangyi Chen"
 date: '`r format(Sys.time(), "%Y-%m-%d")`'
 output: github_document
 ---
@@ -37,7 +37,7 @@ clean_brffss_df = brffss_df |>
   mutate(response = factor(response, order=TRUE, levels = c('poor','good', 'very good','excellent'))) 
 ```
 
-## Question Answers
+### Question Answers
 ```{r 2002 States Observed above 7 or more locations}
 states_2002 = filter(clean_brffss_df, year==2002) |> 
   group_by(locationabbr) |> as_tibble() |> 
@@ -97,9 +97,92 @@ ggplot(plot_df, aes(x = data_value, fill=response)) +
   
 ```
 
+## Problem 3
+```{r Loading & preprocessing the dataset}
+demographics_df = 
+  read.csv("nhanes_covar.csv", skip = 4) |> 
+  janitor::clean_names() |> 
+  mutate(sex = recode(sex, "1" = "male", "2" = "female"),
+         education = recode(education, "1"="Less than high school",
+                            "2" = "High school equivalent",
+                            "3" = "More than high school")) |> 
+  filter(age > 21) |> 
+  drop_na() |> 
+  mutate(education = factor(education, order=TRUE, levels = c('Less than high school',
+                                                              'High school equivalent', 
+                                                              'More than high school')))
+
+acc_df = 
+  read_csv("nhanes_accel.csv") |> 
+  janitor::clean_names()
+
+combined_df = inner_join(demographics_df, acc_df, by="seqn")
+
+
+```
+
+
+```{r men aand women divided into education category}
+education_df = 
+  combined_df |>
+  group_by(education) |> 
+  count(sex) |> 
+  as_tibble()
+plot_df
+```
+
+```{r age distribution for men and women in each education category}
+combined_df |> 
+  ggplot(aes(x=age, fill=education)) +
+  geom_density(alpha = .5) + 
+  facet_grid( ~sex) +
+  labs(title = "Distribution of age for men and women in each education category") +
+  theme(text = element_text(size = 30)) 
+```
+
+### Comments: `education_df` demonstrates that in this dataset, number of female subjects received more than high school education (n=59) is higher than male subjects (n = 54), and  number of female subjects received less than high school education (n=28) is greater than male subjects (n = 27) as well. Based on the distribution plot, we perceived both in female and male groups, the age in education level less than high school is mostly between the age 20 to 40. The age for female subject received high school equivalent lies between 60 and 80. 
+
+
+```{r plot total activity}
+total_activity_df = 
+  combined_df |> 
+  mutate(sum_activity= rowSums(combined_df[6:ncol(combined_df)]))
+
+
+ggplot(total_activity_df, aes(x=age, y=sum_activity,color=education)) +
+  geom_point(size=4) +
+  geom_smooth(se = FALSE) +
+  facet_grid(~sex) +
+  labs(title = "Distribution of total activity for men and women in each education category") +
+  theme(text = element_text(size = 30)) 
+
+
+```
+### Comments: for both females and males, we perceived a decreased trend as the age increases. Additionally, among the three education categories, the peak oftotal activity was perceived in age less the 30 for females and age above 60 in males.
 
 
 
+```{r activity over day}
+plot_df =
+  combined_df |> 
+  pivot_longer(min1:min1440, 
+               names_to ="time",
+               names_prefix = "min", 
+               values_to="activity") |> 
+  group_by(time, sex, education) |> 
+  summarise(sum_activity = sum(activity)) |> 
+  mutate(time = as.numeric(time))
+  
+```
 
 
+```{r visualization of activity over day}
+ggplot(plot_df, aes(x=time, y=sum_activity, color=sex)) +
+  geom_smooth(se = FALSE) +
+  facet_grid(~education) +
+  labs(title = "Activity Over Day for Each Education Level") +
+  theme(text = element_text(size = 30)) 
+```
+
+### Commments: In general, the activity trends were increasing from the begining to mid time during the day, and started to decline afterwards. As depicted from the graph, in less than high school education level, we perceived that males have higher activity level than females at the eariler time (1 min to 500 min), whereas females have higher activity level at later times. In high school equivalent level, males tended to have higher activity over the day compared to females, whereas in the education group of more than high school, females have greater activity across the day.  
 
