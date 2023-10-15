@@ -105,7 +105,7 @@ demographics_df =
          education = recode(education, "1"="Less than high school",
                             "2" = "High school equivalent",
                             "3" = "More than high school")) |> 
-  filter(age > 21) |> 
+  filter(age >= 21) |> 
   drop_na() |> 
   mutate(education = factor(education, order=TRUE, levels = c('Less than high school',
                                                               'High school equivalent', 
