@@ -127,7 +127,7 @@ education_df =
   group_by(education) |> 
   count(sex) |> 
   as_tibble()
-plot_df
+education_df
 ```
 
 ```{r age distribution for men and women in each education category}
